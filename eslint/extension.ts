@@ -14,31 +14,6 @@ import {
 	Protocol2Code
 } from 'vscode-languageclient';
 
-const eslintrc: string = [
-'{',
-'    "env": {',
-'        "browser": true,',
-'        "commonjs": true,',
-'        "es6": true,',
-'        "node": true',
-'    },',
-'    "parserOptions": {',
-'        "ecmaFeatures": {',
-'            "jsx": true',
-'        },',
-'        "sourceType": "module"',
-'    },',
-'    "rules": {',
-'        "no-const-assign": "warn",',
-'        "no-this-before-super": "warn",',
-'        "no-undef": "warn",',
-'        "no-unreachable": "warn",',
-'        "no-unused-vars": "warn",',
-'        "constructor-super": "warn",',
-'        "valid-typeof": "warn"',
-'    }',
-'}'
-].join(process.platform === 'win32' ? '\r\n' : '\n');
 
 interface NoESLintState {
 	global?: boolean;
@@ -95,8 +70,8 @@ export function activate(context: ExtensionContext) {
 	let eslintStatus: Status = Status.ok;
 	let serverRunning: boolean = false;
 
-	statusBarItem.text = 'ESLint';
-	statusBarItem.command = 'eslint.showOutputChannel';
+	statusBarItem.text = 'JavaScript Standard Style';
+	statusBarItem.command = 'standard.showOutputChannel';
 
 	function showStatusBarItem(show: boolean): void {
 		if (show) {
@@ -123,7 +98,7 @@ export function activate(context: ExtensionContext) {
 	}
 
 	function udpateStatusBarVisibility(editor: TextEditor): void {
-		statusBarItem.text = eslintStatus === Status.ok ? 'ESLint' : 'ESLint!';
+		statusBarItem.text = eslintStatus === Status.ok ? 'JavaScript Standard Style' : 'JavaScript Standard Style!';
 		showStatusBarItem(
 			serverRunning &&
 			(
@@ -154,21 +129,20 @@ export function activate(context: ExtensionContext) {
 		documentSelector: languages,
 		diagnosticCollectionName: 'eslint',
 		synchronize: {
-			configurationSection: 'eslint',
+			configurationSection: 'standard',
 			fileEvents: [
-				workspace.createFileSystemWatcher('**/.eslintr{c.js,c.yaml,c.yml,c,c.json}'),
 				workspace.createFileSystemWatcher('**/package.json')
 			],
 			textDocumentFilter: (textDocument) => {
 				let fsPath = textDocument.fileName;
 				if (fsPath) {
 					let basename = path.basename(fsPath);
-					return /^\.eslintrc\./.test(basename) || /^package.json$/.test(basename);
+					return /^package.json$/.test(basename);
 				}
 			}
 		},
 		initializationOptions: () => {
-			let configuration = workspace.getConfiguration('eslint');
+			let configuration = workspace.getConfiguration('standard');
 			return {
 				legacyModuleResolve: configuration ? configuration.get('_legacyModuleResolve', false) : false,
 				nodePath: configuration ? configuration.get('nodePath', undefined) : undefined
@@ -178,13 +152,13 @@ export function activate(context: ExtensionContext) {
 			if (error instanceof ResponseError) {
 				let responseError = (error as ResponseError<InitializeError>);
 				if (responseError.code === 100) {
-					const key = 'noESLintMessageShown';
+					const key = 'noStandardMessageShown';
 					let state = context.globalState.get<NoESLintState>(key, {});
 					if (workspace.rootPath) {
 						client.info([
-							'Failed to load the ESLint library.',
-							'To use ESLint in this workspace please install eslint using \'npm install eslint\' or globally using \'npm install -g eslint\'.',
-							'You need to reopen the workspace after installing eslint.',
+							'Failed to load the standard library.',
+							'To use standard in this workspace please install standard using \'npm install standard\' or globally using \'npm install -g standard\'.',
+							'You need to reopen the workspace after installing standard.',
 						].join('\n'));
 						if (!state.workspaces) {
 							state.workspaces = Object.create(null);
@@ -196,9 +170,9 @@ export function activate(context: ExtensionContext) {
 						}
 					} else {
 						client.info([
-							'Failed to load the ESLint library.',
-							'To use ESLint for single JavaScript files install eslint globally using \'npm install -g eslint\'.',
-							'You need to reopen VS Code after installing eslint.',
+							'Failed to load the standard library.',
+							'To use standard for single JavaScript files install standard globally using \'npm install -g standard\'.',
+							'You need to reopen VS Code after installing standard.',
 						].join('\n'));
 						if (!state.global) {
 							state.global = true;
@@ -229,9 +203,9 @@ export function activate(context: ExtensionContext) {
 		}
 	};
 
-	let client = new LanguageClient('ESLint', serverOptions, clientOptions);
-	const running = 'ESLint server is running.';
-	const stopped = 'ESLint server stopped.'
+	let client = new LanguageClient('standard', serverOptions, clientOptions);
+	const running = 'JavaScript Standard Style server is running.';
+	const stopped = 'JavaScript Standard Style server stopped.'
 	client.onDidChangeState((event) => {
 		if (event.newState === ClientState.Running) {
 			client.info(running);
@@ -252,30 +226,15 @@ export function activate(context: ExtensionContext) {
 	defaultErrorHandler = client.createDefaultErrorHandler();
 	client.onNotification(exitCalled, (params) => {
 		serverCalledProcessExit = true;
-		client.error(`Server process exited with code ${params[0]}. This usually indicates a misconfigured ESLint setup.`, params[1]);
-		window.showErrorMessage(`ESLint server shut down itself. See 'ESLint' output channel for details.`);
-	});
-
-	client.onRequest(NoConfigRequest.type, (params) => {
-		let document = Uri.parse(params.document.uri);
-		let location = document.fsPath;
-		if (workspace.rootPath && document.fsPath.indexOf(workspace.rootPath) === 0) {
-			location = document.fsPath.substr(workspace.rootPath.length + 1);
-		}
-		client.warn([
-			`No ESLint configuration (e.g .eslintrc) found for file: ${location}`,
-			`File will not be validated. Consider running the 'Create .eslintrc.json file' command.`
-		].join('\n'));
-		eslintStatus = Status.warn;
-		udpateStatusBarVisibility(window.activeTextEditor);
-		return {};
+		client.error(`Server process exited with code ${params[0]}. This usually indicates a misconfigured standard setup.`, params[1]);
+		window.showErrorMessage(`JavaScript Standard Style server shut down itself. See 'JavaScript Standard Style' output channel for details.`);
 	});
 
 	function applyTextEdits(uri: string, documentVersion: number, edits: TextEdit[]) {
 		let textEditor = window.activeTextEditor;
 		if (textEditor && textEditor.document.uri.toString() === uri) {
 			if (textEditor.document.version !== documentVersion) {
-				window.showInformationMessage(`ESLint fixes are outdated and can't be applied to the document.`);
+				window.showInformationMessage(`JavaScript Standard Style fixes are outdated and can't be applied to the document.`);
 			}
 			textEditor.edit(mutator => {
 				for(let edit of edits) {
@@ -283,7 +242,7 @@ export function activate(context: ExtensionContext) {
 				}
 			}).then((success) => {
 				if (!success) {
-					window.showErrorMessage('Failed to apply ESLint fixes to the document. Please consider opening an issue with steps to reproduce.');
+					window.showErrorMessage('Failed to apply JavaScript Standard Style fixes to the document. Please consider opening an issue with steps to reproduce.');
 				}
 			});
 		}
@@ -300,22 +259,13 @@ export function activate(context: ExtensionContext) {
 				applyTextEdits(uri, result.documentVersion, result.edits);
 			}
 		}, (error) => {
-			window.showErrorMessage('Failed to apply ESLint fixes to the document. Please consider opening an issue with steps to reproduce.');
+			window.showErrorMessage('Failed to apply JavaScript Standard Style fixes to the document. Please consider opening an issue with steps to reproduce.');
 		});
 	}
 
-	function createDefaultConfiguration(): void {
-		if (!workspace.rootPath) {
-			window.showErrorMessage('An ESLint configuration can only be generated if VS Code is opened on a folder.');
-		}
-		let eslintConfigFile = path.join(workspace.rootPath, '.eslintrc.json');
-		if (!fs.existsSync(eslintConfigFile)) {
-			fs.writeFileSync(eslintConfigFile, eslintrc, { encoding: 'utf8' });
-		}
-	}
 
 	function configurationChanged() {
-		let config = workspace.getConfiguration('eslint');
+		let config = workspace.getConfiguration('standard');
 		let autoFix = config.get('autoFixOnSave', false);
 		if (autoFix && !willSaveTextDocument) {
 			willSaveTextDocument = workspace.onWillSaveTextDocument((event) => {
@@ -344,13 +294,12 @@ export function activate(context: ExtensionContext) {
 	configurationChanged();
 
 	context.subscriptions.push(
-		new SettingMonitor(client, 'eslint.enable').start(),
-		commands.registerCommand('eslint.applySingleFix', applyTextEdits),
-		commands.registerCommand('eslint.applySameFixes', applyTextEdits),
-		commands.registerCommand('eslint.applyAllFixes', applyTextEdits),
-		commands.registerCommand('eslint.executeAutofix', runAutoFix),
-		commands.registerCommand('eslint.createConfig', createDefaultConfiguration),
-		commands.registerCommand('eslint.showOutputChannel', () => { client.outputChannel.show(); }),
+		new SettingMonitor(client, 'standard.enable').start(),
+		commands.registerCommand('standard.applySingleFix', applyTextEdits),
+		commands.registerCommand('standard.applySameFixes', applyTextEdits),
+		commands.registerCommand('standard.applyAllFixes', applyTextEdits),
+		commands.registerCommand('standard.executeAutofix', runAutoFix),
+		commands.registerCommand('standard.showOutputChannel', () => { client.outputChannel.show(); }),
 		statusBarItem
 	);
 }

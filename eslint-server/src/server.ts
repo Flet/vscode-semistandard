@@ -34,7 +34,7 @@ class ID {
 type RunValues = 'onType' | 'onSave';
 
 interface Settings {
-	eslint: {
+	standard: {
 		enable: boolean;
 		enableAutofixOnSave: boolean;
 		options: any;
@@ -84,7 +84,7 @@ function makeDiagnostic(problem: ESLintProblem): Diagnostic {
 	return {
 		message: message,
 		severity: convertSeverity(problem.severity),
-		source: 'eslint',
+		source: 'standard',
 		range: {
 			start: { line: startLine, character: startChar },
 			end: { line: endLine, character: endChar }
@@ -159,13 +159,13 @@ let supportedLanguages: Map<boolean> = {
 documents.listen(connection);
 // A text document has changed. Validate the document according the run setting.
 documents.onDidChangeContent((event) => {
-	if (settings.eslint.run === 'onType') {
+	if (settings.standard.run === 'onType') {
 		validateSingle(event.document);
 	}
 });
 // A text document has been saved. Validate the document according the run setting.
 documents.onDidSave((event) => {
-	if (settings.eslint.run === 'onSave') {
+	if (settings.standard.run === 'onSave') {
 		validateSingle(event.document);
 	}
 });
@@ -185,35 +185,35 @@ connection.onInitialize((params): Thenable<InitializeResult | ResponseError<Init
 		legacyModuleResolve: boolean;
 		nodePath: string;
 	} = params.initializationOptions;
-	let noEslintLib = new ResponseError<InitializeError>(100,
-		'Failed to load eslint library.',
+	let noStandardLib = new ResponseError<InitializeError>(100,
+		'Failed to load standard library.',
 		{ retry: false }
 	);
-	let noCLIEngine = new ResponseError(101, 'The eslint library doesn\'t export a CLIEngine. You need at least eslint@1.0.0', { retry: false });
+	let noLintText = new ResponseError(101, 'The standard library doesn\'t export a lintText.', { retry: false });
 	let result: InitializeResult = { capabilities: { textDocumentSync: documents.syncKind, codeActionProvider: true }};
 	let legacyModuleResolve = initOptions ? !!initOptions.legacyModuleResolve : false;
 	if (legacyModuleResolve) {
-		return Files.resolveModule(rootPath, 'eslint').then((value): InitializeResult | ResponseError<InitializeError> => {
-			if (!value.CLIEngine) {
-				return noCLIEngine;
+		return Files.resolveModule(rootPath, 'standard').then((value): InitializeResult | ResponseError<InitializeError> => {
+			if (!value.lintText) {
+				return noLintText;
 			}
 			lib = value;
 			return result;
 		}, (error) => {
-			return noEslintLib;
+			return noStandardLib;
 		});
 	} else {
 		let nodePath = initOptions ? (initOptions.nodePath ? initOptions.nodePath : undefined) : undefined;
 		let resolve = legacyModuleResolve ? Files.resolveModule : Files.resolveModule2;
 
-		return Files.resolveModule2(rootPath, 'eslint', nodePath, trace).then((value): any => {
-			if (!value.CLIEngine) {
-				return noCLIEngine;
+		return Files.resolveModule2(rootPath, 'standard', nodePath, trace).then((value) => {
+			if (!value.lintText) {
+				return noLintText;
 			}
 			lib = value;
 			return result;
 		}, (error) => {
-			return noEslintLib;
+			return noStandardLib;
 		});
 	}
 });
@@ -236,28 +236,30 @@ function validate(document: TextDocument): void {
 	if (!supportedLanguages[document.languageId]) {
 		return;
 	}
-	let CLIEngine = lib.CLIEngine;
-	let cli = new CLIEngine(options);
 	let content = document.getText();
 	let uri = document.uri;
 	// Clean previously computed code actions.
 	delete codeActions[uri];
-	let report: ESLintReport = cli.executeOnText(content, Files.uriToFilePath(uri));
 	let diagnostics: Diagnostic[] = [];
-	if (report && report.results && Array.isArray(report.results) && report.results.length > 0) {
-		let docReport = report.results[0];
-		if (docReport.messages && Array.isArray(docReport.messages)) {
-			docReport.messages.forEach((problem) => {
-				if (problem) {
-					let diagnostic = makeDiagnostic(problem);
-					diagnostics.push(diagnostic);
-					recordCodeAction(document, diagnostic, problem);
-				}
-			});
+	lib.lintText(content, options, function (error, results) {
+		let report: ESLintReport = results
+		if (report && report.results && Array.isArray(report.results) && report.results.length > 0) {
+			let docReport = report.results[0];
+			if (docReport.messages && Array.isArray(docReport.messages)) {
+				docReport.messages.forEach((problem) => {
+					if (problem) {
+						let diagnostic = makeDiagnostic(problem);
+						diagnostics.push(diagnostic);
+						recordCodeAction(document, diagnostic, problem);
+					}
+				});
+			}
 		}
-	}
-	// Publish the diagnostics
-	return connection.sendDiagnostics({ uri, diagnostics });
+		// Publish the diagnostics
+		return connection.sendDiagnostics({ uri, diagnostics });
+	})
+
+
 }
 
 interface ESLintError extends Error {
@@ -417,8 +419,8 @@ function validateMany(documents: TextDocument[]): void {
 
 connection.onDidChangeConfiguration((params) => {
 	settings = params.settings;
-	if (settings.eslint) {
-		options = settings.eslint.options || {};
+	if (settings.standard) {
+		options = settings.standard.options || {};
 	}
 	// Settings have changed. Revalidate all documents.
 	validateMany(documents.all());
@@ -432,10 +434,8 @@ connection.onDidChangeWatchedFiles((params) => {
 		let fspath = Files.uriToFilePath(change.uri);
 		let dirname = path.dirname(fspath);
 		if (dirname) {
-			let CLIEngine = lib.CLIEngine;
-			let cli = new CLIEngine(options);
 			try {
-				cli.executeOnText("", path.join(dirname, "___test___.js"));
+				lib.lintText("", options, function (error, results) {});
 				delete configErrorReported[fspath];
 			} catch (error) {
 			}
@@ -543,7 +543,7 @@ connection.onCodeAction((params) => {
 	for (let editInfo of fixes.getScoped(params.context.diagnostics)) {
 		documentVersion = editInfo.documentVersion;
 		ruleId = editInfo.ruleId;
-		result.push(Command.create(editInfo.label, 'eslint.applySingleFix', uri, documentVersion, [
+		result.push(Command.create(editInfo.label, 'standard.applySingleFix', uri, documentVersion, [
 			createTextEdit(editInfo)
 		]));
 	};
@@ -565,10 +565,10 @@ connection.onCodeAction((params) => {
 			}
 		}
 		if (same.length > 1) {
-			result.push(Command.create(`Fix all ${ruleId} problems`, 'eslint.applySameFixes', uri, documentVersion, same.map(createTextEdit)));
+			result.push(Command.create(`Fix all ${ruleId} problems`, 'standard.applySameFixes', uri, documentVersion, same.map(createTextEdit)));
 		}
 		if (all.length > 1) {
-			result.push(Command.create(`Fix all auto-fixable problems`, 'eslint.applyAllFixes', uri, documentVersion, all.map(createTextEdit)));
+			result.push(Command.create(`Fix all auto-fixable problems`, 'standard.applyAllFixes', uri, documentVersion, all.map(createTextEdit)));
 		}
 	}
 	return result;

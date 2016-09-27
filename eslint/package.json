@@ -1,19 +1,19 @@
 {
-  "name": "vscode-eslint",
-  "displayName": "ESLint",
-  "description": "Integrates ESLint into VS Code.",
-  "version": "1.0.8",
-  "author": "Microsoft Corporation",
+  "name": "vscode-standardjs",
+  "displayName": "JavaScript Standard Style",
+  "description": "Integrates JavaScript Standard Style into VS Code.",
+  "version": "1.0.0",
+  "author": "Sam Chen",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/vscode-eslint.git"
+    "url": "https://github.com/chenxsan/vscode-standardjs.git"
   },
   "bugs": {
-    "url": "https://github.com/Microsoft/vscode-eslint/issues"
+    "url": "https://github.com/chenxsan/vscode-standardjs/issues"
   },
-  "publisher": "dbaeumer",
-  "icon": "eslint_icon.svg",
+  "publisher": "chenxsan",
+  "icon": "standard_icon.svg",
   "categories": [
     "Linters"
   ],
@@ -23,36 +23,35 @@
   "activationEvents": [
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
-    "onCommand:eslint.executeAutofix",
-    "onCommand:eslint.createConfig"
+    "onCommand:standard.executeAutofix"
   ],
   "main": "./out/extension",
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "ESLint configuration",
+      "title": "JavaScript Standard Style configuration",
       "properties": {
-        "eslint.enable": {
+        "standard.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Controls whether eslint is enabled for JavaScript files or not."
+          "description": "Controls whether JavaScript Standard Style is enabled for JavaScript files or not."
         },
-        "eslint.nodePath": {
+        "standard.nodePath": {
           "type": "string",
           "default": null,
-          "description": "A path added to NODE_PATH when resolving the eslint module."
+          "description": "A path added to NODE_PATH when resolving the standard module."
         },
-        "eslint._legacyModuleResolve": {
+        "standard._legacyModuleResolve": {
           "type": "boolean",
           "default": false,
           "description": "Uses the legacy module resolving."
         },
-        "eslint.options": {
+        "standard.options": {
           "type": "object",
           "default": {},
-          "description": "The eslint options object to provide args normally passed to eslint when executed from a command line."
+          "description": "The JavaScript Standard Style options object to provide args normally passed to JavaScript Standard Style when executed from a command line."
         },
-        "eslint.trace.server": {
+        "standard.trace.server": {
           "type": "string",
           "enum": [
             "off",
@@ -60,9 +59,9 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Traces the communication between VSCode and the eslint linter service."
+          "description": "Traces the communication between VSCode and the JavaScript Standard Style linter service."
         },
-        "eslint.run": {
+        "standard.run": {
           "type": "string",
           "enum": [
             "onSave",
@@ -71,7 +70,7 @@
           "default": "onType",
           "description": "Run the linter on save (onSave) or on type (onType)"
         },
-        "eslint.autoFixOnSave": {
+        "standard.autoFixOnSave": {
           "type": "boolean",
           "default": false,
           "description": "Turns auto fix on save on or off."
@@ -81,23 +80,8 @@
     "commands": [
       {
         "title": "Fix all auto-fixable problems",
-        "category": "ESLint",
-        "command": "eslint.executeAutofix"
-      },
-      {
-        "title": "Create '.eslintrc.json' file",
-        "category": "ESLint",
-        "command": "eslint.createConfig"
-      }
-    ],
-    "jsonValidation": [
-      {
-        "fileMatch": ".eslintrc",
-        "url": "http://json.schemastore.org/eslintrc"
-      },
-      {
-        "fileMatch": ".eslintrc.json",
-        "url": "http://json.schemastore.org/eslintrc"
+        "category": "JavaScript Standard Style",
+        "command": "standard.executeAutofix"
       }
     ]
   },
