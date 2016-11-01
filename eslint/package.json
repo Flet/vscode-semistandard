@@ -3,7 +3,7 @@
   "displayName": "JavaScript Semistandard Style",
   "description": "Integrates JavaScript Semistandard Style into VS Code.",
   "version": "1.0.0",
-  "author": "Sam Chen",
+  "author": "Dan Flettre",
   "license": "MIT",
   "repository": {
     "type": "git",
