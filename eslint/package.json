@@ -1,57 +1,103 @@
 {
-	"name": "vscode-standardjs",
-	"displayName": "standardjs",
-	"description": "Use standardjs to lint JavaScript files.",
-	"version": "0.0.5",
-	"author": "Sam Chen",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/chenxsan/vscode-standardjs.git"
-	},
-	"bugs": {
-		"url": "https://github.com/chenxsan/vscode-standardjs/issues"
-	},
-	"publisher": "chenxsan",
-	"icon": "standard_icon.svg",
-	"categories": [
-		"Linters"
-	],
-	"engines": {
-		"vscode": "0.10.x"
-	},
-	"activationEvents": [
-		"onLanguage:javascript", "onLanguage:javascriptreact"
-	],
-	"main": "./out/extension",
-	"contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "standardjs configuration",
-			"properties": {
-				"standard.enable": {
-					"type": "boolean",
-					"default": true,
-					"description": "Control whether standardjs is enabled for JavaScript files or not."
-				},
-				"standard.options": {
-					"type": "object",
-					"default": {},
-					"description": "The standard options object to provide args to the standard command."
-				}
-			}
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "cd ../eslint-server && npm run compile && cd ../eslint && tsc -p ./",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./"
-	},
-	"devDependencies": {
-		"vscode": "0.10.x",
-		"typescript": "^1.6.2"
-	},
-	"dependencies": {
-		"vscode-languageclient": "0.10.x"
-	}
+  "name": "vscode-semistandards",
+  "displayName": "JavaScript Semistandard Style",
+  "description": "Integrates JavaScript Semistandard Style into VS Code.",
+  "version": "1.0.0",
+  "author": "Sam Chen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flet/vscode-semistandards.git"
+  },
+  "bugs": {
+    "url": "https://github.com/flet/vscode-semistandards/issues"
+  },
+  "publisher": "flet",
+  "icon": "standard_icon.svg",
+  "categories": [
+    "Linters"
+  ],
+  "engines": {
+    "vscode": "^1.6.0"
+  },
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onCommand:semistandard.executeAutofix"
+  ],
+  "main": "./out/extension",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "JavaScript Semistandard Style configuration",
+      "properties": {
+        "semistandard.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether JavaScript Semistandard Style is enabled for JavaScript files or not."
+        },
+        "semistandard.nodePath": {
+          "type": "string",
+          "default": null,
+          "description": "A path added to NODE_PATH when resolving the semistandard module."
+        },
+        "semistandard._legacyModuleResolve": {
+          "type": "boolean",
+          "default": false,
+          "description": "Uses the legacy module resolving."
+        },
+        "semistandard.options": {
+          "type": "object",
+          "default": {},
+          "description": "The JavaScript Semistandard Style options object to provide args normally passed to JavaScript Semistandard Style when executed from a command line."
+        },
+        "semistandard.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VSCode and the JavaScript Semistandard Style linter service."
+        },
+        "semistandard.run": {
+          "type": "string",
+          "enum": [
+            "onSave",
+            "onType"
+          ],
+          "default": "onType",
+          "description": "Run the linter on save (onSave) or on type (onType)"
+        },
+        "semistandard.autoFixOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Turns auto fix on save on or off."
+        }
+      }
+    },
+    "commands": [
+      {
+        "title": "Fix all auto-fixable problems",
+        "category": "JavaScript Semistandard Style",
+        "command": "semistandard.executeAutofix"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run update-vscode && cd ../eslint-server && npm run compile && cd ../eslint && npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "update-vscode": "node ./node_modules/vscode/bin/install",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "typescript": "^2.0.3",
+    "vscode": "^1.0.0",
+    "@types/node": "^6.0.40"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^2.5.0"
+  }
 }
